@@ -1,0 +1,44 @@
+cleanup_unmanaged:
+  environments: true
+  variables: true
+  secrets: true
+
+environments:
+  dev:
+  qas:
+  prd:
+    wait_timer: 10
+    prevent_self_review: true
+    reviewers:
+      users:
+        - tleepa
+    deployment_branches:
+      - main
+
+variables:
+  NODE_VERSION:
+    _: 20
+  DATABASE_POOL_SIZE:
+    prd: 20
+    qas: 10
+    dev: 5
+  API_BASE_URL:
+    prd: https://api.myapp.com
+    qas: https://qa-api.myapp.com
+    dev: http://localhost:3000
+  DEPLOY_REGION:
+    _: us-west-2
+    prd: us-east-1
+
+secrets:
+  TENANT:
+    _:
+  TOKEN_SECRET:
+    _:
+    prd:
+  DATABASE_URL:
+    prd:
+    qas:
+  API_SECRET_KEY:
+    prd:
+    qas:
