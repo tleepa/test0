@@ -1,0 +1,22 @@
+name: Install yq
+description: Installs yq YAML processor
+
+runs:
+  using: composite
+  steps:
+    - name: Install yq binary
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if ! command -v yq &> /dev/null; then
+          if [ "$RUNNER_ARCH" = "X64" ]; then
+            YQ_ARCH=amd64
+          elif [ "$RUNNER_ARCH" = "ARM64" ]; then
+            YQ_ARCH=arm64
+          fi
+          wget -qO ./yq "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${YQ_ARCH}"
+          sudo install ./yq /usr/local/bin/
+        fi
+
+        yq --version

@@ -1,0 +1,127 @@
+name: Sync Repositories
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "variables/*.yml"
+  pull_request:
+    paths:
+      - ".github/variables/*.yml"
+  workflow_dispatch:
+
+jobs:
+  discover-repos:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Discover files
+        id: set-matrix
+        run: |
+          MATRIX=$(find ./variables -type f -name "*.yml" | while read file; do
+            ORG=$(basename $(dirname "$file"))
+            REPO=$(basename "$file" .yml)
+            echo "{\"org\":\"$ORG\",\"repo\":\"$REPO\"}"
+          done | jq -s -c .)
+          echo "matrix=$MATRIX" >>$GITHUB_OUTPUT
+
+  validate-config:
+    needs: discover-repos
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.discover-repos.outputs.matrix) }}
+    env:
+      CONFIG_FILE: "./variables/${{ matrix.org }}/${{ matrix.repo }}.yml"
+      REPO: "${{ matrix.org }}/${{ matrix.repo }}"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install yq
+        uses: ./.github/actions/install-yq
+
+      - name: Validate YAML config
+        run: |
+          ${{ github.workspace }}/.github/workflows/scripts/validate-config.sh
+
+  dry-run:
+    needs:
+      - discover-repos
+      - validate-config
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.discover-repos.outputs.matrix) }}
+    env:
+      CONFIG_FILE: "./variables/${{ matrix.org }}/${{ matrix.repo }}.yml"
+      REPO: "${{ matrix.org }}/${{ matrix.repo }}"
+      DRY_RUN: true
+      GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install yq
+        uses: ./.github/actions/install-yq
+
+      - name: Sync environments
+        run: |
+          ${{ github.workspace }}/.github/workflows/scripts/sync-envs.sh
+
+      - name: Sync variables and secrets
+        run: |
+          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh secrets
+
+      - name: Cleanup
+        run: |
+          ${{ github.workspace }}/.github/workflows/scripts/cleanup-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh secrets
+
+  process-file:
+    needs:
+      - discover-repos
+      - dry-run
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.discover-repos.outputs.matrix) }}
+
+    env:
+      CONFIG_FILE: "./variables/${{ matrix.org }}/${{ matrix.repo }}.yml"
+      REPO: "${{ matrix.org }}/${{ matrix.repo }}"
+      DRY_RUN: false
+      GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install yq
+        uses: ./.github/actions/install-yq
+
+      - name: Sync environments
+        run: |
+          ${{ github.workspace }}/.github/workflows/scripts/sync-envs.sh
+
+      - name: Sync variables and secrets
+        run: |
+          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh secrets
+
+      - name: Cleanup
+        run: |
+          ${{ github.workspace }}/.github/workflows/scripts/cleanup-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh secrets
