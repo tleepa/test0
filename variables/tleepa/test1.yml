@@ -3,17 +3,21 @@ cleanup_unmanaged:
   variables: true
   secrets: true
 
+protected_branches:
+  - main
+
 environments:
   dev:
   qas:
-  prd:
-    wait_timer: 10
     prevent_self_review: true
     reviewers:
       users:
         - tleepa
-    deployment_branches:
-      - main
+  prd:
+    prevent_self_review: true
+    reviewers:
+      users:
+        - tleepa
 
 variables:
   NODE_VERSION:

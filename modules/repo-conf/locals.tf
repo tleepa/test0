@@ -9,16 +9,6 @@ locals {
 
   valid_envs = keys(try(var.repo_config.environments, {}))
 
-  env_branch_policies = flatten([
-    for env_name, config in try(var.repo_config.environments, {}) : [
-      for pattern in try(config.deployment_branches, []) : {
-        id      = "${env_name}-${pattern}"
-        env     = env_name
-        pattern = pattern
-      }
-    ] if can(config.deployment_branches)
-  ])
-
   env_vars = flatten([
     for var_name, scopes in try(var.repo_config.variables, {}) : [
       for scope, val in scopes : {

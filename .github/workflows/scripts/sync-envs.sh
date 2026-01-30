@@ -48,7 +48,6 @@ echo "$environments" | while read -r env_name; do
       if [ "$reviewers" != "null" ] && [ -n "$reviewers" ]; then
         reviewers_json=$(yq eval ".environments.${env_name}.reviewers" "$CONFIG_FILE" -o=json)
 
-        # Fetch user IDs for user logins
         user_reviewers="[]"
         users=$(jq -r '.users[]? // empty' <<<"$reviewers_json")
         if [ -n "$users" ]; then
@@ -60,7 +59,6 @@ echo "$environments" | while read -r env_name; do
           done <<<"$users"
         fi
 
-        # Fetch team IDs for team slugs
         team_reviewers="[]"
         teams=$(jq -r '.teams[]? // empty' <<<"$reviewers_json")
         if [ -n "$teams" ]; then
@@ -80,31 +78,18 @@ echo "$environments" | while read -r env_name; do
         fi
       fi
 
-      deployment_branches=$(yq eval ".environments.${env_name}.deployment_branches" "$CONFIG_FILE" 2>/dev/null)
-      if [ "$deployment_branches" != "null" ] && [ -n "$deployment_branches" ]; then
-        config_json=$(jq '.deployment_branch_policy = {"protected_branches": false, "custom_branch_policies": true}' <<<"$config_json")
+      protected_branches=$(yq eval '.protected_branches' "$CONFIG_FILE" 2>/dev/null)
+      if [ "$protected_branches" != "null" ] && [ -n "$protected_branches" ]; then
+        config_json=$(jq '.deployment_branch_policy = {"protected_branches": true, "custom_branch_policies": false}' <<<"$config_json")
       fi
 
       if [ "$config_json" != "{}" ]; then
         if [ "$DRY_RUN" = "true" ]; then
-          echo "Would configure environment $env_name with: $config_json"
+          echo "Would configure environment $env_name"
         else
+          echo "Configuring environment $env_name"
           gh api -X PUT "repos/$REPO/environments/$env_name" --input <(echo "$config_json")
         fi
-      fi
-
-      if [ "$deployment_branches" != "null" ] && [ -n "$deployment_branches" ]; then
-        branches_list=$(yq eval ".environments.${env_name}.deployment_branches[]" "$CONFIG_FILE")
-        echo "$branches_list" | while read -r branch_pattern; do
-          if [ -n "$branch_pattern" ]; then
-            if [ "$DRY_RUN" = "true" ]; then
-              echo "Would add deployment branch pattern for $env_name: $branch_pattern"
-            else
-              echo "Adding deployment branch pattern for $env_name: $branch_pattern"
-              gh api -X POST "repos/$REPO/environments/$env_name/deployment-branch-policies" -f name="$branch_pattern"
-            fi
-          fi
-        done
       fi
     fi
   fi

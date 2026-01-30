@@ -19,18 +19,10 @@ resource "github_repository_environment" "envs" {
   }
 
   dynamic "deployment_branch_policy" {
-    for_each = can(each.value.deployment_branches) ? [1] : []
+    for_each = length(try(var.repo_config.protected_branches, [])) > 0 ? [1] : []
     content {
-      protected_branches     = false
-      custom_branch_policies = true
+      protected_branches     = true
+      custom_branch_policies = false
     }
   }
-}
-
-resource "github_repository_environment_deployment_policy" "branch_policies" {
-  for_each = { for p in local.env_branch_policies : p.id => p }
-
-  repository     = data.github_repository.repo.name
-  environment    = github_repository_environment.envs[each.value.env].environment
-  branch_pattern = each.value.pattern
 }

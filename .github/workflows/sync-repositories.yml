@@ -2,8 +2,6 @@ name: Sync Repositories
 
 on:
   push:
-    branches:
-      - main
     paths:
       - "variables/*.yml"
   pull_request:
@@ -75,6 +73,7 @@ jobs:
       - name: Sync environments
         run: |
           ${{ github.workspace }}/.github/workflows/scripts/sync-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/sync-branch-protection.sh
 
       - name: Sync variables and secrets
         run: |
@@ -88,6 +87,7 @@ jobs:
           ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh secrets
 
   process-file:
+    if: github.ref == 'refs/heads/main'
     needs:
       - discover-repos
       - dry-run
@@ -114,6 +114,7 @@ jobs:
       - name: Sync environments
         run: |
           ${{ github.workspace }}/.github/workflows/scripts/sync-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/sync-branch-protection.sh
 
       - name: Sync variables and secrets
         run: |
