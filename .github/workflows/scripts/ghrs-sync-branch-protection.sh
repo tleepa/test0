@@ -13,7 +13,7 @@ if [ "$protected_branches" = "null" ] || [ -z "$protected_branches" ]; then
   exit 0
 fi
 
-echo "Configuring repository merge settings..."
+echo "Configuring repository merge settings"
 merge_settings='{
   "allow_merge_commit": false,
   "allow_squash_merge": true,
@@ -25,9 +25,9 @@ merge_settings='{
 }'
 
 if [ "$DRY_RUN" = "true" ]; then
-  echo "Would update merge settings with: $merge_settings"
+  echo "Would update merge settings"
 else
-  echo "Updating merge settings with: $merge_settings"
+  echo "Updating merge settings"
   gh api -X PATCH "repos/$REPO" --input <(echo "$merge_settings")
 fi
 
@@ -41,7 +41,7 @@ fi
 RULESET_NAME="Protected branches"
 existing_ruleset=$(gh api "repos/$REPO/rulesets" --jq ".[] | select(.name == \"$RULESET_NAME\") | .id" 2>/dev/null || echo "")
 
-branch_patterns=$(yq eval '.protected_branches[]' "$CONFIG_FILE" | jq -R . | jq -s .)
+branch_patterns=$(yq eval '.protected_branches[]' "$CONFIG_FILE" | sed 's|^|refs/heads/|' | jq -R . | jq -s .)
 
 ruleset_payload=$(cat <<EOF
 {
@@ -100,5 +100,3 @@ else
     gh api -X POST "repos/$REPO/rulesets" --input <(echo "$ruleset_payload")
   fi
 fi
-
-echo "Branch protection synchronization complete"

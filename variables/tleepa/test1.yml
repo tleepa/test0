@@ -9,11 +9,13 @@ protected_branches:
 environments:
   dev:
   qas:
+    protect_branches: true
     prevent_self_review: true
     reviewers:
       users:
         - tleepa
   prd:
+    protect_branches: true
     prevent_self_review: true
     reviewers:
       users:

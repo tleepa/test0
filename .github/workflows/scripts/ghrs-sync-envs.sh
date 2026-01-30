@@ -78,9 +78,12 @@ echo "$environments" | while read -r env_name; do
         fi
       fi
 
-      protected_branches=$(yq eval '.protected_branches' "$CONFIG_FILE" 2>/dev/null)
-      if [ "$protected_branches" != "null" ] && [ -n "$protected_branches" ]; then
-        config_json=$(jq '.deployment_branch_policy = {"protected_branches": true, "custom_branch_policies": false}' <<<"$config_json")
+      protect_branches=$(yq eval ".environments.${env_name}.protect_branches" "$CONFIG_FILE" 2>/dev/null)
+      if [ "$protect_branches" = "true" ]; then
+        protected_branches=$(yq eval '.protected_branches' "$CONFIG_FILE" 2>/dev/null)
+        if [ "$protected_branches" != "null" ] && [ -n "$protected_branches" ]; then
+          config_json=$(jq '.deployment_branch_policy = {"protected_branches": true, "custom_branch_policies": false}' <<<"$config_json")
+        fi
       fi
 
       if [ "$config_json" != "{}" ]; then

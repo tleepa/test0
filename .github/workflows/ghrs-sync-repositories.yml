@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - "variables/*.yml"
+      - ".github/workflows/**/ghrs*.yml"
   pull_request:
     paths:
-      - ".github/variables/*.yml"
+      - "variables/*.yml"
+      - ".github/workflows/**/ghrs*.yml"
   workflow_dispatch:
 
 jobs:
@@ -47,7 +49,7 @@ jobs:
 
       - name: Validate YAML config
         run: |
-          ${{ github.workspace }}/.github/workflows/scripts/validate-config.sh
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-validate-config.sh
 
   dry-run:
     needs:
@@ -72,19 +74,19 @@ jobs:
 
       - name: Sync environments
         run: |
-          ${{ github.workspace }}/.github/workflows/scripts/sync-envs.sh
-          ${{ github.workspace }}/.github/workflows/scripts/sync-branch-protection.sh
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-branch-protection.sh
 
       - name: Sync variables and secrets
         run: |
-          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh variables
-          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh secrets
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-vars.sh secrets
 
       - name: Cleanup
         run: |
-          ${{ github.workspace }}/.github/workflows/scripts/cleanup-envs.sh
-          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh variables
-          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh secrets
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-cleanup-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-cleanup-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-cleanup-vars.sh secrets
 
   process-file:
     if: github.ref == 'refs/heads/main'
@@ -113,16 +115,16 @@ jobs:
 
       - name: Sync environments
         run: |
-          ${{ github.workspace }}/.github/workflows/scripts/sync-envs.sh
-          ${{ github.workspace }}/.github/workflows/scripts/sync-branch-protection.sh
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-branch-protection.sh
 
       - name: Sync variables and secrets
         run: |
-          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh variables
-          ${{ github.workspace }}/.github/workflows/scripts/sync-vars.sh secrets
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-sync-vars.sh secrets
 
       - name: Cleanup
         run: |
-          ${{ github.workspace }}/.github/workflows/scripts/cleanup-envs.sh
-          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh variables
-          ${{ github.workspace }}/.github/workflows/scripts/cleanup-vars.sh secrets
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-cleanup-envs.sh
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-cleanup-vars.sh variables
+          ${{ github.workspace }}/.github/workflows/scripts/ghrs-cleanup-vars.sh secrets
