@@ -1,9 +1,9 @@
 resource "restapi_object" "repo_settings" {
   count = length(try(var.repo_config.protected_branches, [])) > 0 ? 1 : 0
 
-  debug = true
+  debug                   = true
   ignore_server_additions = true
-  read_path   = "/repos/${var.github_org}/${var.repo_name}"
+  read_path               = "/repos/${var.github_org}/${var.repo_name}"
 
   create_method = "PATCH"
   path          = "/repos/${var.github_org}/${var.repo_name}"
@@ -18,7 +18,7 @@ resource "restapi_object" "repo_settings" {
   })
 
   update_method = "PATCH"
-  update_path = "/repos/${var.github_org}/${var.repo_name}"
+  update_path   = "/repos/${var.github_org}/${var.repo_name}"
   update_data = jsonencode({
     allow_merge_commit          = false
     allow_squash_merge          = true
@@ -30,7 +30,7 @@ resource "restapi_object" "repo_settings" {
   })
 
   destroy_method = "PATCH"
-  destroy_path = "/repos/${var.github_org}/${var.repo_name}"
+  destroy_path   = "/repos/${var.github_org}/${var.repo_name}"
   destroy_data = jsonencode({
     allow_merge_commit          = true
     allow_squash_merge          = true
