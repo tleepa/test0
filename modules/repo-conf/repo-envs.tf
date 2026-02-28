@@ -19,7 +19,7 @@ resource "github_repository_environment" "envs" {
   }
 
   dynamic "deployment_branch_policy" {
-    for_each = length(try(var.repo_config.protected_branches, [])) > 0 ? [1] : []
+    for_each = try(each.value.protect_branches, false) == true && length(try(var.repo_config.protected_branches, [])) > 0 ? [1] : []
     content {
       protected_branches     = true
       custom_branch_policies = false

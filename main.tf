@@ -19,4 +19,3 @@ module "github_repositories" {
   repo_name   = each.value.repo
   repo_config = each.value.config_data
 }
-

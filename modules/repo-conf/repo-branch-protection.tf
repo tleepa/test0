@@ -8,7 +8,7 @@ resource "github_repository_ruleset" "branch_protection" {
 
   conditions {
     ref_name {
-      include = var.repo_config.protected_branches
+      include = [for branch in var.repo_config.protected_branches : "refs/heads/${branch}"]
       exclude = []
     }
   }
