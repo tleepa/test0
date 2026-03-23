@@ -25,7 +25,7 @@ if [ -z "$item_names" ]; then
   exit 0
 fi
 
-all_envs=$(gh api "repos/$REPO/environments" --jq '.environments[].name' 2>/dev/null || echo "")
+environments=$(yq eval '.environments | keys | .[]' "$CONFIG_FILE" 2>/dev/null || echo "")
 
 is_glob() {
   [[ "$1" == *"*"* ]] || [[ "$1" == *"?"* ]] || [[ "$1" == *"["* ]]
@@ -89,11 +89,12 @@ echo "$item_names" | while read -r item_name; do
         fi
       fi
     elif is_glob "$scope"; then
-      echo "$all_envs" | while read -r env_name; do
+      echo "$environments" | while read -r env_name; do
         if [ -z "$env_name" ]; then
-          if [[ "$env_name" == $scope ]]; then
-            apply_env_resource "$env_name" "$item_name" "$value"
-          fi
+          continue
+        fi
+        if [[ "$env_name" == $scope ]]; then
+          apply_env_resource "$env_name" "$item_name" "$value"
         fi
       done
     else

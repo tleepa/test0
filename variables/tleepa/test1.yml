@@ -3,6 +3,8 @@ cleanup_unmanaged:
   variables: true
   secrets: true
 
+# actions_access_level: organization
+
 protected_branches:
   - main
 
@@ -20,18 +22,12 @@ environments:
     reviewers:
       users:
         - tleepa
-  prd_plan:
-    protect_branches: true
-    prevent_self_review: true
-    reviewers:
-      users:
-        - tleepa
 
 variables:
   NODE_VERSION:
     _: 20
   DATABASE_POOL_SIZE:
-    'prd*': 20
+    prd: 20
     qas: 10
     dev: 5
   API_BASE_URL:

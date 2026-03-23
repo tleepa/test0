@@ -41,3 +41,10 @@ resource "restapi_object" "repo_settings" {
     squash_merge_commit_message = "COMMIT_MESSAGES"
   })
 }
+
+resource "github_actions_repository_access_level" "this" {
+  count = try(var.repo_config.actions_access_level, null) != null && !data.github_repository.repo.private ? 1 : 0
+
+  repository   = data.github_repository.repo.name
+  access_level = var.repo_config.actions_access_level
+}
