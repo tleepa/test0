@@ -7,7 +7,7 @@ if [ "$DRY_RUN" = "true" ]; then
   echo "Running in dry run mode - no changes will be made"
 fi
 
-environments=$(yq eval '.variables.[] | keys | .[]' "$CONFIG_FILE" | grep -v '^_$' | sort -u)
+environments=$(yq eval '.environments | keys | .[]' "$CONFIG_FILE" 2>/dev/null || echo "")
 
 if [ -z "$environments" ]; then
   exit 0
