@@ -27,6 +27,10 @@ fi
 
 managed_items=$(yq eval ".${RESOURCE_TYPE} | keys | .[]" "$CONFIG_FILE" | sort)
 
+is_glob() {
+  [[ "$1" == *"*"* ]] || [[ "$1" == *"?"* ]] || [[ "$1" == *"["* ]]
+}
+
 existing_repo_items=$(gh ${RESOURCE_TYPE%s} list --repo "$REPO" --json name --jq '.[].name' 2>/dev/null || echo "")
 
 if [ -n "$existing_repo_items" ]; then
@@ -39,7 +43,7 @@ if [ -n "$existing_repo_items" ]; then
     has_repo_scope="false"
 
     if [ -n "$is_managed" ]; then
-      repo_value=$(yq eval ".${RESOURCE_TYPE}.${existing_item}._" "$CONFIG_FILE")
+      repo_value=$(yq eval ".${RESOURCE_TYPE}.${existing_item}[\"_\"]" "$CONFIG_FILE")
       if [ "$repo_value" != "null" ]; then
         has_repo_scope="true"
       fi
@@ -76,9 +80,20 @@ if [ -n "$existing_envs" ]; then
         has_env_scope="false"
 
         if [ -n "$is_managed" ]; then
-          env_value=$(yq eval ".${RESOURCE_TYPE}.${existing_item}.${env_name}" "$CONFIG_FILE")
+          env_value=$(yq eval ".${RESOURCE_TYPE}.${existing_item}[\"${env_name}\"]" "$CONFIG_FILE")
           if [ "$env_value" != "null" ]; then
             has_env_scope="true"
+          else
+            item_scopes=$(yq eval ".${RESOURCE_TYPE}.${existing_item} | keys | .[]" "$CONFIG_FILE")
+            while IFS= read -r scope; do
+              if [ -z "$scope" ] || [ "$scope" = "_" ]; then
+                continue
+              fi
+              if is_glob "$scope" && [[ "$env_name" == $scope ]]; then
+                has_env_scope="true"
+                break
+              fi
+            done <<< "$item_scopes"
           fi
         fi
 

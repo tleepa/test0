@@ -25,6 +25,36 @@ if [ -z "$item_names" ]; then
   exit 0
 fi
 
+all_envs=$(gh api "repos/$REPO/environments" --jq '.environments[].name' 2>/dev/null || echo "")
+
+is_glob() {
+  [[ "$1" == *"*"* ]] || [[ "$1" == *"?"* ]] || [[ "$1" == *"["* ]]
+}
+
+apply_env_resource() {
+  local env_name="$1"
+  local item_name="$2"
+  local value="$3"
+  if [ "$RESOURCE_TYPE" = "secrets" ]; then
+    if gh secret list --env "$env_name" --repo "$REPO" --json name --jq '.[].name' 2>/dev/null | grep -qx "$item_name"; then
+      echo "Environment secret exists: $env_name/$item_name"
+    else
+      if [ "$DRY_RUN" = "true" ]; then
+        echo "Would create environment secret: $env_name/$item_name"
+      else
+        echo "REPLACE_ME" | gh secret set "$item_name" --env "$env_name" --repo "$REPO"
+        echo "Created environment secret: $env_name/$item_name"
+      fi
+    fi
+  else
+    if [ "$DRY_RUN" = "true" ]; then
+      echo "Would set environment variable: $env_name/$item_name=$value"
+    else
+      gh variable set "$item_name" --body "$value" --env "$env_name" --repo "$REPO"
+    fi
+  fi
+}
+
 echo "$item_names" | while read -r item_name; do
   if [ -z "$item_name" ]; then
     continue
@@ -37,7 +67,7 @@ echo "$item_names" | while read -r item_name; do
       continue
     fi
 
-    value=$(yq eval ".${RESOURCE_TYPE}.${item_name}.${scope}" "$CONFIG_FILE")
+    value=$(yq eval ".${RESOURCE_TYPE}.${item_name}[\"${scope}\"]" "$CONFIG_FILE")
 
     if [ "$scope" = "_" ]; then
       if [ "$RESOURCE_TYPE" = "secrets" ]; then
@@ -58,25 +88,16 @@ echo "$item_names" | while read -r item_name; do
           gh variable set "$item_name" --body "$value" --repo "$REPO"
         fi
       fi
-    else
-      if [ "$RESOURCE_TYPE" = "secrets" ]; then
-        if gh secret list --env "$scope" --repo "$REPO" --json name --jq '.[].name' 2>/dev/null | grep -qx "$item_name"; then
-          echo "Environment secret exists: $scope/$item_name"
-        else
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "Would create environment secret: $scope/$item_name"
-          else
-            echo "REPLACE_ME" | gh secret set "$item_name" --env "$scope" --repo "$REPO"
-            echo "Created environment secret: $scope/$item_name"
+    elif is_glob "$scope"; then
+      echo "$all_envs" | while read -r env_name; do
+        if [ -z "$env_name" ]; then
+          if [[ "$env_name" == $scope ]]; then
+            apply_env_resource "$env_name" "$item_name" "$value"
           fi
         fi
-      else
-        if [ "$DRY_RUN" = "true" ]; then
-          echo "Would set environment variable: $scope/$item_name=$value"
-        else
-          gh variable set "$item_name" --body "$value" --env "$scope" --repo "$REPO"
-        fi
-      fi
+      done
+    else
+      apply_env_resource "$scope" "$item_name" "$value"
     fi
   done
 done
