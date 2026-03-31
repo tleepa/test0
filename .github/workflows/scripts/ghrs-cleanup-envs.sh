@@ -3,14 +3,25 @@ set -euo pipefail
 
 echo "Starting cleanup of unmanaged GitHub environments"
 
+if [ "$DRY_RUN" = "true" ]; then
+  echo "Running in dry run mode - no changes will be made"
+fi
+
+is_private=$(gh api "repos/$REPO" --jq '.private')
+
+if [ "$is_private" != "true" ]; then
+  echo "Resetting actions access level to: none"
+  if [ "$DRY_RUN" = "true" ]; then
+    echo "Would reset actions access level to: none"
+  else
+    gh api --method PUT "repos/$REPO/actions/permissions/access" --field "access_level=none"
+  fi
+fi
+
 cleanup_unmanaged=$(yq eval '.cleanup_unmanaged.environments' "$CONFIG_FILE")
 if [ "$cleanup_unmanaged" != "true" ]; then
   echo "Cleanup of unmanaged environments is disabled"
   exit 0
-fi
-
-if [ "$DRY_RUN" = "true" ]; then
-  echo "Running in dry run mode - no changes will be made"
 fi
 
 managed_envs=$(yq eval '.environments | keys | .[]' "$CONFIG_FILE" 2>/dev/null | sort -u || echo "")

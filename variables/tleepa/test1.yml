@@ -3,6 +3,8 @@ cleanup_unmanaged:
   variables: true
   secrets: true
 
+# actions_access_level: organization
+
 protected_branches:
   - main
 

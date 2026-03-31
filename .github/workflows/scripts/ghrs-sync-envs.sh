@@ -7,6 +7,20 @@ if [ "$DRY_RUN" = "true" ]; then
   echo "Running in dry run mode - no changes will be made"
 fi
 
+is_private=$(gh api "repos/$REPO" --jq '.private')
+
+if [ "$is_private" != "true" ]; then
+  actions_access_level=$(yq eval '.actions_access_level' "$CONFIG_FILE" 2>/dev/null)
+  if [ "$actions_access_level" != "null" ] && [ -n "$actions_access_level" ]; then
+    echo "Setting actions access level to: $actions_access_level"
+    if [ "$DRY_RUN" = "true" ]; then
+      echo "Would set actions access level to: $actions_access_level"
+    else
+      gh api --method PUT "repos/$REPO/actions/permissions/access" --field "access_level=$actions_access_level"
+    fi
+  fi
+fi
+
 environments=$(yq eval '.environments | keys | .[]' "$CONFIG_FILE" 2>/dev/null || echo "")
 
 if [ -z "$environments" ]; then
